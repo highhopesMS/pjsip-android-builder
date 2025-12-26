@@ -1,28 +1,38 @@
 # PJSIP Android Builder
 
-Easily build PJSIP with: OpenSSL, OpenH264, Opus and G.729 (without Intel IPP) for Android.
+Easily build PJSIP with: OpenSSL, OpenH264, Opus, G.729 (without Intel IPP), and Oboe audio backend for Android.
 
 ## Purpose
 
 I needed an easily replicable build system to build PJSIP <http://www.pjsip.org/> native library with NDK for Android. So, I created an Ubuntu docker container (20.04.4 LTS) and wrote some scripts to download, install all the requirements needed to make it a complete build environment and some automated build scripts.
 If you want to contribute, your help is really appreciated :)
 
-## Support - PJSIP 2.9+
+## Version 3.0 Features
 
-Using Android API `21`.
+- **16KB Page Size Support**: Ready for Android 15+ and Google Play requirements (November 2025)
+- **Oboe Audio Backend**: Low-latency audio with automatic device-specific workarounds
+- **OpenSSL 3.x**: Modern security and improved performance
+- **Updated Dependencies**: Latest stable versions of all libraries
+
+## Support - PJSIP 2.14+
+
+Using Android API `24` (required for Oboe audio backend).
 Default versions included:
 
-- Android Cmd Tools: `8512546`
-- Android NKD: `r21e`
-- OpenSSL: `1.1.1k` (Uses NDK Level 21)
-- OpenH264: `2.1.0` (Uses NDK Level 21)
-- Opus: `1.3.1`
+- Android Cmd Tools: `11076708`
+- Android NDK: `r28c` (16KB page size aligned by default)
+- PJSIP: `2.14.1`
+- OpenSSL: `3.4.0`
+- OpenH264: `2.6.0`
+- Opus: `1.5.2`
 - bcg729: `1.1.1`
-- Swig: `4.0.2`
+- Oboe: `1.9.3`
+- Swig: `4.3.0`
 
 ## Legacy support
 
-Checkout tag `2.2.0` to build older pjsip (or other libs) versions.
+Checkout tag `2.7.0` to build with older versions (NDK r21e, PJSIP 2.12.1, OpenSL ES audio).
+Checkout tag `2.2.0` to build much older pjsip (or other libs) versions.
 
 ## Setup
 
@@ -70,8 +80,28 @@ This project has separate independent script to build only single libraries:
 - OpenSSL
 - OpenH264
 - Opus
+- Oboe (downloaded as prefab package)
 
 If you want to build a single library, or just change it's version, you can disable everything except the library you want to build from the `config.conf` file and specify the version you want (of course you would also need the NDK). Then execute the `prepare-build-system` script. If the environment is ready you can also just run the lib dedicated script.
+
+## Audio Backend
+
+By default, this builder uses **Oboe** as the audio backend. Oboe provides:
+- Lower audio latency
+- Automatic fallback to AAudio (API 27+) or OpenSL ES
+- Device-specific bug workarounds
+
+To use legacy **OpenSL ES** instead, set in `config.conf`:
+```bash
+ENABLE_OBOE=0
+DOWNLOAD_OBOE=0
+```
+
+## 16KB Page Size
+
+Starting November 2025, Google Play requires apps targeting Android 15+ to support 16KB page sizes. This builder uses NDK r28c which compiles 16KB-aligned binaries by default.
+
+The same APK will work on both 4KB and 16KB devices.
 
 ## License
 
