@@ -43,7 +43,19 @@ function setConfigSite {
     echo "#define PJ_CONFIG_ANDROID 1" > "$CONFIG_SITE_PATH"
     echo "#define PJMEDIA_HAS_G7221_CODEC 1" >> "$CONFIG_SITE_PATH"
     echo "#define PJMEDIA_AUDIO_DEV_HAS_ANDROID_JNI 0" >> "$CONFIG_SITE_PATH"
-    echo "#define PJMEDIA_AUDIO_DEV_HAS_OPENSL 1" >> "$CONFIG_SITE_PATH"
+
+    # Audio backend configuration
+    if [ "${ENABLE_OBOE}" == "1" ]
+    then
+        echo "Enabling Oboe audio backend in config_site"
+        echo "#define PJMEDIA_AUDIO_DEV_HAS_OBOE 1" >> "$CONFIG_SITE_PATH"
+        echo "#define PJMEDIA_AUDIO_DEV_HAS_OPENSL 0" >> "$CONFIG_SITE_PATH"
+    else
+        echo "Using OpenSL ES audio backend in config_site"
+        echo "#define PJMEDIA_AUDIO_DEV_HAS_OBOE 0" >> "$CONFIG_SITE_PATH"
+        echo "#define PJMEDIA_AUDIO_DEV_HAS_OPENSL 1" >> "$CONFIG_SITE_PATH"
+    fi
+
     echo "#define PJSIP_AUTH_AUTO_SEND_NEXT 0" >> "$CONFIG_SITE_PATH"
     echo "#define PJMEDIA_HAS_OPUS_CODEC 1" >> "$CONFIG_SITE_PATH"
 
@@ -147,6 +159,14 @@ function buildPjSip {
         echo "without BCG729 support"
     fi
 
+    if [ "${ENABLE_OBOE}" == "1" ]
+    then
+        echo "with Oboe audio backend"
+        args+=("--with-oboe=${OBOE_BUILD_OUT_PATH}/libs/${arch}")
+    else
+        echo "without Oboe audio backend (using OpenSL ES)"
+    fi
+
     APP_PLATFORM=android-${TARGET_ANDROID_API} TARGET_ABI=$arch ./configure-android "${args[@]}" >> "${FINAL_BUILD_LOGS}/${arch}.log" 2>&1
 
     make dep >>"${FINAL_BUILD_LOGS}/${arch}.log" 2>&1
@@ -167,6 +187,15 @@ function buildPjSip {
     if [ -f ${OPENH264_BUILD_OUT_PATH}/libs/${arch}/lib/libopenh264.so ]; then
         echo "Copying OpenH264 .so library to final build directory ..."
         cp ${OPENH264_BUILD_OUT_PATH}/libs/${arch}/lib/libopenh264.so ${FINAL_BUILD_LIB}/${arch}/
+    fi
+
+    # Copy Oboe library if enabled
+    if [ "${ENABLE_OBOE}" == "1" ]; then
+        OBOE_LIB="${OBOE_BUILD_OUT_PATH}/libs/${arch}/lib/liboboe.so"
+        if [ -f "$OBOE_LIB" ]; then
+            echo "Copying Oboe .so library to final build directory ..."
+            cp "$OBOE_LIB" ${FINAL_BUILD_LIB}/${arch}/
+        fi
     fi
 }
 

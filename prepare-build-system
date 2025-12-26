@@ -30,8 +30,14 @@ then
     apt-get install -y openjdk-8-jdk
 
     DEPS="unzip git curl bzip2 binutils make autoconf openssl \
-          libssl-dev libopus0 libpcre3 libpcre3-dev build-essential nasm python" 
-    sh -c "dpkg --add-architecture i386; apt-get update && apt-get -y upgrade && apt-get install -y ${DEPS}"
+          libssl-dev libopus0 libpcre3 libpcre3-dev build-essential nasm python3"
+
+    # Only add i386 architecture on x86_64 systems (not needed on ARM)
+    if [ "$(uname -m)" = "x86_64" ]; then
+        dpkg --add-architecture i386
+    fi
+
+    apt-get update && apt-get -y upgrade && apt-get install -y ${DEPS}
 fi
 
 if [ "$DOWNLOAD_NDK" == "1" ]
@@ -250,6 +256,52 @@ then
     echo "bcg729 downloaded!"
     cd ${BASEDIR}
     ./bcg729-build || true
+fi
+
+if [ "${DOWNLOAD_OBOE}" == "1" ]
+then
+    echo ""
+    echo "Downloading Oboe ${OBOE_VERSION} ..."
+    echo ""
+    cd "$DOWNLOAD_DIR"
+    rm -rf "${OBOE_DIR_NAME}"
+    mkdir -p "${OBOE_DIR_NAME}"
+
+    # Download the AAR file
+    curl -L -# -o oboe.aar "$OBOE_DOWNLOAD_URL" 2>&1
+    echo "Oboe downloaded!"
+
+    # Extract the AAR (it's a zip file)
+    echo "Extracting Oboe prefab package ..."
+    unzip -q oboe.aar -d "${OBOE_DIR_NAME}"
+    rm -f oboe.aar
+
+    # Setup output directories
+    mkdir -p "${OBOE_BUILD_OUT_PATH}"
+
+    # Copy libraries for each architecture
+    echo "Setting up Oboe libraries for target architectures ..."
+    for arch in "${TARGET_ARCHS[@]}"
+    do
+        OBOE_PREFAB_DIR="${OBOE_DIR_NAME}/prefab/modules/oboe/libs/android.${arch}"
+        if [ -d "$OBOE_PREFAB_DIR" ]; then
+            mkdir -p "${OBOE_BUILD_OUT_PATH}/libs/${arch}/lib"
+            mkdir -p "${OBOE_BUILD_OUT_PATH}/libs/${arch}/include"
+            cp -r ${OBOE_PREFAB_DIR}/*.so "${OBOE_BUILD_OUT_PATH}/libs/${arch}/lib/" 2>/dev/null || true
+            cp -r ${OBOE_PREFAB_DIR}/*.a "${OBOE_BUILD_OUT_PATH}/libs/${arch}/lib/" 2>/dev/null || true
+        fi
+    done
+
+    # Copy include files (same for all architectures)
+    OBOE_INCLUDE_DIR="${OBOE_DIR_NAME}/prefab/modules/oboe/include"
+    if [ -d "$OBOE_INCLUDE_DIR" ]; then
+        for arch in "${TARGET_ARCHS[@]}"
+        do
+            cp -r ${OBOE_INCLUDE_DIR}/* "${OBOE_BUILD_OUT_PATH}/libs/${arch}/include/" 2>/dev/null || true
+        done
+    fi
+
+    echo "Oboe setup completed!"
 fi
 
 echo ""

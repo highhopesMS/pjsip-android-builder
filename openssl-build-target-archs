@@ -1,6 +1,7 @@
 #!/bin/bash -e
 # @author Vincenzo Esposito (v.esposito@voismart.it)
 # Hints and code taken also from https://proandroiddev.com/tutorial-compile-openssl-to-1-1-1-for-android-application-87137968fee
+# Updated for OpenSSL 3.x compatibility
 
 set -e
 
