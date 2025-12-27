@@ -24,12 +24,12 @@ function setupPathsAndExports {
     LIB_PATH="${OPENSSL_BUILD_OUT_PATH}/libs"
     LOG_PATH="${OPENSSL_BUILD_OUT_PATH}/logs"
 
-    # Export ANDROID_NDK_HOME env var
+    # Export ANDROID_NDK env vars (OpenSSL 3.x requires ANDROID_NDK_ROOT)
     export ANDROID_NDK_HOME=$NDK_PATH
+    export ANDROID_NDK_ROOT=$NDK_PATH
     # Add toolchains bin directory to PATH
     TOOLCHAIN_PATH="$NDK_PATH/toolchains/llvm/prebuilt/linux-x86_64"
-    # for some reason it does not need to be exported
-    PATH=$TOOLCHAIN_PATH/bin:$PATH
+    export PATH=$TOOLCHAIN_PATH/bin:$PATH
 }
 
 function clearBuildDirectory {
@@ -48,9 +48,11 @@ function getArchitecture {
     OPENSSL_TARGET_ABI=$1
     if [ "$OPENSSL_TARGET_ABI" == "armeabi-v7a" ]
     then
-        ARCHITECTURE="android-arm"
+        # Use "no-asm" to avoid PIC issues with ARM assembly and NDK r28+ linker
+        ARCHITECTURE="android-arm no-asm"
     elif [ "$OPENSSL_TARGET_ABI" == "arm64-v8a" ]
     then
+        # arm64 assembly works fine with PIC
         ARCHITECTURE="android-arm64"
     elif [ "$OPENSSL_TARGET_ABI" == "x86" ]
     then
@@ -102,7 +104,13 @@ do
     getArchitecture $arch
 
     # Create Makefile
-    ./Configure $ARCHITECTURE -D__ANDROID_API__=${OPENSSL_TARGET_NDK_LEVEL} >> "${LOG_PATH}/${arch}.log" 2>&1
+    # Use no-shared for static libs, but enable PIC for Android shared library linking
+    # OpenSSL 3.x uses CFLAGS for -fPIC, not a configure option
+    export CFLAGS="-fPIC"
+    export CXXFLAGS="-fPIC"
+    ./Configure $ARCHITECTURE -D__ANDROID_API__=${OPENSSL_TARGET_NDK_LEVEL} no-shared >> "${LOG_PATH}/${arch}.log" 2>&1
+    unset CFLAGS
+    unset CXXFLAGS
 
     # Build Openssl
     echo "Building OpenSSL Library for Android arch $arch"

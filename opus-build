@@ -17,10 +17,10 @@ mkdir -p "${LOG_PATH}"
 
 cd $OPUS_PATH
 
-# Download Android.mk
-echo "Downloading Android.mk file from PjSip website ..."
+# Copy Android.mk from repository (no external download needed)
+echo "Copying Android.mk file ..."
 mkdir -p jni
-(cd jni && curl -O https://trac.pjsip.org/repos/raw-attachment/ticket/1904/Android.mk)
+cp "${BASEDIR}/opus-android/Android.mk" jni/
 
 # Build Opus
 echo "Building Opus $OPUS_VERSION ..."

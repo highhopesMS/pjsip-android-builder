@@ -4,7 +4,7 @@ Easily build PJSIP with: OpenSSL, OpenH264, Opus, G.729 (without Intel IPP), and
 
 ## Purpose
 
-I needed an easily replicable build system to build PJSIP <http://www.pjsip.org/> native library with NDK for Android. So, I created an Ubuntu docker container (20.04.4 LTS) and wrote some scripts to download, install all the requirements needed to make it a complete build environment and some automated build scripts.
+I needed an easily replicable build system to build PJSIP <http://www.pjsip.org/> native library with NDK for Android. So, I created an Ubuntu docker container (22.04 LTS) and wrote some scripts to download, install all the requirements needed to make it a complete build environment and some automated build scripts.
 If you want to contribute, your help is really appreciated :)
 
 ## Version 3.0 Features
@@ -39,7 +39,12 @@ Checkout tag `2.2.0` to build much older pjsip (or other libs) versions.
 You can install everything on your local machine, or (the way I do) use an Ubuntu Docker container and mount an external volume with this repo. E.g.:
 
 ```bash
-docker run -it --name pjsip-builder -v /path/to/host/repo:/home ubuntu bash
+docker run -it --name pjsip-builder -v /path/to/host/repo:/home ubuntu:22.04 bash
+```
+
+**For Apple Silicon Macs**, add platform emulation:
+```bash
+docker run --platform linux/amd64 -it --name pjsip-builder -v /path/to/host/repo:/home ubuntu:22.04 bash
 ```
 
 ### Configuration
