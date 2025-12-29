@@ -14,14 +14,14 @@ If you want to contribute, your help is really appreciated :)
 - **OpenSSL 3.x**: Modern security and improved performance
 - **Updated Dependencies**: Latest stable versions of all libraries
 
-## Support - PJSIP 2.14+
+## Support - PJSIP 2.16
 
 Using Android API `24` (required for Oboe audio backend).
 Default versions included:
 
 - Android Cmd Tools: `11076708`
 - Android NDK: `r28c` (16KB page size aligned by default)
-- PJSIP: `2.14.1`
+- PJSIP: `2.16`
 - OpenSSL: `3.4.0`
 - OpenH264: `2.6.0`
 - Opus: `1.5.2`

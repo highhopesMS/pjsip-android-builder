@@ -1,6 +1,6 @@
 --- pjsip/include/pjsip-ua/sip_regc.h.orig	2024-01-01 00:00:00.000000000 +0000
 +++ pjsip/include/pjsip-ua/sip_regc.h	2024-01-01 00:00:00.000000000 +0000
-@@ -228,7 +228,8 @@
+@@ -222,7 +222,8 @@
                                       const pj_str_t *to_url,
                                       int ccnt,
                                       const pj_str_t contact[],
@@ -12,10 +12,11 @@
  /**
 --- pjsip/include/pjsua-lib/pjsua.h.orig	2024-01-01 00:00:00.000000000 +0000
 +++ pjsip/include/pjsua-lib/pjsua.h	2024-01-01 00:00:00.000000000 +0000
-@@ -3840,6 +3840,14 @@
+@@ -4074,6 +4074,14 @@
+      * This field is mandatory.
       */
      pj_str_t        id;
-
++
 +    /**
 +     * The Call ID used in REGISTER. If the value is empty, a random generated
 +     * value will be used.
@@ -23,13 +24,12 @@
 +     * This field is optional.
 +     */
 +    pj_str_t        call_id;
-+
+
      /**
       * This is the URL to be put in the request URI for the registration,
-      * and will look something like "sip:serviceprovider".
 --- pjsip/include/pjsua2/account.hpp.orig	2024-01-01 00:00:00.000000000 +0000
 +++ pjsip/include/pjsua2/account.hpp	2024-01-01 00:00:00.000000000 +0000
-@@ -177,6 +177,14 @@
+@@ -190,6 +190,14 @@
       */
      unsigned            proxyUse;
 
@@ -72,7 +72,7 @@
      regc->cseq_hdr = pjsip_cseq_hdr_create(regc->pool);
 --- pjsip/src/pjsua-lib/pjsua_acc.c.orig	2024-01-01 00:00:00.000000000 +0000
 +++ pjsip/src/pjsua-lib/pjsua_acc.c	2024-01-01 00:00:00.000000000 +0000
-@@ -94,6 +94,7 @@
+@@ -95,6 +95,7 @@
      pj_strdup_with_null(pool, &dst->contact_uri_params,
                          &src->contact_uri_params);
      pj_strdup_with_null(pool, &dst->pidf_tuple_id, &src->pidf_tuple_id);
@@ -80,21 +80,9 @@
      pj_strdup_with_null(pool, &dst->rfc5626_instance_id,
                          &src->rfc5626_instance_id);
      pj_strdup_with_null(pool, &dst->rfc5626_reg_id, &src->rfc5626_reg_id);
-@@ -2642,7 +2643,8 @@
-                               &acc->cfg.reg_uri,
-                               &acc->cfg.id,
-                               &acc->cfg.id,
--                              1, &acc->reg_contact,
--                              acc->cfg.reg_timeout);
-+                              1, &acc->reg_contact,
-+                              acc->cfg.reg_timeout,
-+                              &acc->cfg.call_id);
-     if (status != PJ_SUCCESS) {
-         pjsua_perror(THIS_FILE,
-                      "Client registration initialization error",
 --- pjsip/src/pjsua-lib/pjsua_core.c.orig	2024-01-01 00:00:00.000000000 +0000
 +++ pjsip/src/pjsua-lib/pjsua_core.c	2024-01-01 00:00:00.000000000 +0000
-@@ -323,6 +323,8 @@
+@@ -335,6 +335,8 @@
 
      pj_bzero(cfg, sizeof(*cfg));
 
@@ -105,7 +93,7 @@
      cfg->unreg_timeout = PJSUA_UNREG_TIMEOUT;
 --- pjsip/src/pjsua2/account.cpp.orig	2024-01-01 00:00:00.000000000 +0000
 +++ pjsip/src/pjsua2/account.cpp	2024-01-01 00:00:00.000000000 +0000
-@@ -236,6 +236,7 @@
+@@ -313,6 +313,7 @@
      NODE_READ_UNSIGNED  (this_node, unregWaitMsec);
      NODE_READ_UNSIGNED  (this_node, proxyUse);
      NODE_READ_STRING    (this_node, contactParams);
@@ -113,7 +101,7 @@
 
      readSipHeaders(this_node, "headers", headers);
  }
-@@ -256,6 +257,7 @@
+@@ -333,6 +334,7 @@
      NODE_WRITE_UNSIGNED (this_node, unregWaitMsec);
      NODE_WRITE_UNSIGNED (this_node, proxyUse);
      NODE_WRITE_STRING   (this_node, contactParams);
@@ -121,7 +109,7 @@
 
      writeSipHeaders(this_node, "headers", headers);
  }
-@@ -583,6 +585,7 @@
+@@ -688,6 +690,7 @@
      ret.drop_calls_on_reg_fail  = regConfig.dropCallsOnFail;
      ret.unreg_timeout           = regConfig.unregWaitMsec;
      ret.reg_use_proxy           = regConfig.proxyUse;
@@ -129,7 +117,7 @@
      ret.reg_contact_params      = str2Pj(regConfig.contactParams);
      ret.reg_contact_uri_params  = str2Pj(regConfig.contactUriParams);
      for (i=0; i<regConfig.headers.size(); ++i) {
-@@ -742,6 +745,7 @@
+@@ -874,6 +877,7 @@
      regConfig.dropCallsOnFail   = PJ2BOOL(prm.drop_calls_on_reg_fail);
      regConfig.unregWaitMsec     = prm.unreg_timeout;
      regConfig.proxyUse          = prm.reg_use_proxy;
@@ -139,7 +127,7 @@
      regConfig.headers.clear();
 --- pjsip/src/test/regc_test.c.orig	2024-01-01 00:00:00.000000000 +0000
 +++ pjsip/src/test/regc_test.c	2024-01-01 00:00:00.000000000 +0000
-@@ -292,8 +292,8 @@
+@@ -298,8 +298,8 @@
      if (status != PJ_SUCCESS)
          return -100;
 
